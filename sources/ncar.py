@@ -67,8 +67,6 @@ class NcarSource(BaseSource):
 
     PDF_TYPES = {
         "OriginalAttachPath":   ("original",   "original.pdf"),
-        "TranslatedAttachPath": ("translated", "translated.pdf"),
-        "PrintedAttachPath":    ("printed",    "printed.pdf"),
     }
 
     def __init__(self):
@@ -138,7 +136,7 @@ class NcarSource(BaseSource):
         return [
             "index", "encrypted_id", "number", "title_ar", "title_en",
             "approve_type", "approve_date", "is_valid", "marker",
-            "has_original", "has_translated", "has_printed",
+            "has_original",
         ]
 
     def metadata_to_csv_row(
@@ -158,6 +156,4 @@ class NcarSource(BaseSource):
             "is_valid":       meta.status,
             "marker":         meta.extra.get("marker", ""),
             "has_original":   int(pdf_results.get("original", False)),
-            "has_translated": int(pdf_results.get("translated", False)),
-            "has_printed":    int(pdf_results.get("printed", False)),
         }
