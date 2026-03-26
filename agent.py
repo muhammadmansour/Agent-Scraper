@@ -48,7 +48,9 @@ def safe_dirname(text: str, max_len: int = 80) -> str:
     """Convert a title to a filesystem-safe directory name."""
     for ch in r'/\:*?"<>|':
         text = text.replace(ch, "_")
-    return text.strip()[:max_len]
+    # Strip, truncate, then strip again (truncation can leave trailing spaces)
+    # Also remove trailing dots — Windows doesn't allow those either
+    return text.strip()[:max_len].rstrip(" .")
 
 
 # ── core scraping loop ──────────────────────────────────────────────────────
