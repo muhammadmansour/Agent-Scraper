@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-Multi-Source Document Scraping Agent — Workflow Edition
-========================================================
-Scrapes documents and PDFs from multiple sources using a stage-based pipeline.
+Multi-Source Document Scraping Agent
+=====================================
+Supports two modes:
 
-Pipeline per page:
-    Fetch → Extract → Download (parallel) → Store
+1. **Workflow mode** (default) — scripted pipeline per source:
+       Fetch → Extract → Download (parallel) → Store
+
+2. **Agent mode** (--agent) — LLM-powered autonomous scraping:
+       Observe → Reason (Gemini) → Act (tools) → Learn → Repeat
 
 Usage:
-    python agent.py --source ncar                      # scrape NCAR
+    python agent.py --source ncar                      # scripted workflow
     python agent.py --source ncar --start-page 50      # resume from page 50
     python agent.py --source ncar --no-pdf             # metadata + CSV only
     python agent.py --source ncar --workers 5          # 5 parallel PDF downloads
@@ -16,6 +19,8 @@ Usage:
     python agent.py --source ncar --retry-failed       # retry failed downloads
     python agent.py --source all                       # scrape ALL sources
     python agent.py --list-sources                     # show available sources
+    python agent.py --agent                            # LLM autonomous mode
+    python agent.py --agent --goal "scrape all ncar"   # with a specific goal
 """
 
 import sys
@@ -242,10 +247,10 @@ def retry_failed(source: BaseSource, max_workers: int = 3) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Multi-Source Document Scraping Agent (Workflow)",
+        description="Multi-Source Document Scraping Agent",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
-Examples:
+Examples (workflow mode):
   python agent.py --list-sources
   python agent.py --source ncar
   python agent.py --source ncar --start-page 50
@@ -253,11 +258,18 @@ Examples:
   python agent.py --source ncar --workers 5
   python agent.py --source all
   python agent.py --source ncar --retry-failed
+
+Examples (agent mode — LLM-powered):
+  python agent.py --agent
+  python agent.py --agent --goal "scrape all NCAR documents"
+  python agent.py --agent --no-pdf --workers 1
 """,
     )
+
+    # ── shared arguments ─────────────────────────────────────────────────
     parser.add_argument(
         "--source", type=str, default=None,
-        help="Source name (e.g. 'ncar') or 'all'",
+        help="Source name (e.g. 'ncar') or 'all' (workflow mode)",
     )
     parser.add_argument(
         "--list-sources", action="store_true",
@@ -265,7 +277,7 @@ Examples:
     )
     parser.add_argument(
         "--start-page", type=int, default=None,
-        help="Resume from a specific page number",
+        help="Resume from a specific page number (workflow mode)",
     )
     parser.add_argument(
         "--no-pdf", action="store_true",
@@ -273,15 +285,33 @@ Examples:
     )
     parser.add_argument(
         "--retry-failed", action="store_true",
-        help="Retry previously failed downloads",
+        help="Retry previously failed downloads (workflow mode)",
     )
     parser.add_argument(
         "--test", action="store_true",
-        help="Test mode — process only 2 pages",
+        help="Test mode — process only 2 pages (workflow mode)",
     )
     parser.add_argument(
         "--workers", type=int, default=3,
         help="Number of parallel PDF download workers (default: 3)",
+    )
+
+    # ── agent mode arguments ─────────────────────────────────────────────
+    parser.add_argument(
+        "--agent", action="store_true",
+        help="Run in autonomous agent mode (LLM-powered with Gemini)",
+    )
+    parser.add_argument(
+        "--goal", type=str, default="",
+        help="High-level goal for the agent (e.g. 'scrape all NCAR')",
+    )
+    parser.add_argument(
+        "--gemini-key", type=str, default=None,
+        help="Gemini API key (or set GEMINI_API_KEY env var)",
+    )
+    parser.add_argument(
+        "--model", type=str, default="gemini-2.0-flash",
+        help="Gemini model name (default: gemini-2.0-flash)",
     )
 
     args = parser.parse_args()
@@ -292,7 +322,22 @@ Examples:
         for sname, display in list_sources():
             print(f"  {sname:15s}  {display}")
         print(f"\nUsage: python agent.py --source <name>")
+        print(f"       python agent.py --agent")
         sys.exit(0)
+
+    # ── agent mode ───────────────────────────────────────────────────────
+    if args.agent:
+        from agent.loop import AgentLoop
+
+        goal = args.goal or "Scrape all documents from all registered sources."
+        loop = AgentLoop(
+            api_key=args.gemini_key,
+            model_name=args.model,
+            download_pdf=not args.no_pdf,
+            max_workers=args.workers,
+        )
+        loop.run(goal=goal)
+        return
 
     # ── validate ─────────────────────────────────────────────────────────
     if not args.source:
