@@ -310,8 +310,8 @@ Examples (agent mode — LLM-powered):
         help="Gemini API key (or set GEMINI_API_KEY env var)",
     )
     parser.add_argument(
-        "--model", type=str, default="gemini-2.0-flash",
-        help="Gemini model name (default: gemini-2.0-flash)",
+        "--model", type=str, default="gemini-2.5-pro",
+        help="Gemini model name (default: gemini-2.5-pro)",
     )
 
     args = parser.parse_args()

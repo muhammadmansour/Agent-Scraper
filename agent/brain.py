@@ -56,7 +56,7 @@ class GeminiBrain:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-2.5-pro",
     ):
         self.api_key = _resolve_api_key(api_key)
         self.model_name = model_name
