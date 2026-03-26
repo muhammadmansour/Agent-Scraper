@@ -19,7 +19,7 @@ import sys
 import os
 import time
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Force UTF-8 output on Windows
@@ -62,7 +62,7 @@ def run_source(
     """Run the full scraping loop for one source."""
 
     state_mgr = StateManager(source.name)
-    client = HttpClient()
+    client = HttpClient(verify_ssl=source.verify_ssl)
 
     print("╔══════════════════════════════════════════════╗")
     print(f"║  Scraping: {source.display_name:<34}║")
@@ -72,7 +72,7 @@ def run_source(
     state       = state_mgr.load_state()
     resume_page = start_page or (state["last_page"] + 1)
     processed   = state["processed_count"]
-    start_time  = datetime.utcnow()
+    start_time  = datetime.now(timezone.utc)
     fail_count  = len(state_mgr.get_failures())
     per_page    = source.default_per_page
 
@@ -162,7 +162,7 @@ def run_source(
         time.sleep(source.delay_between_pages)
 
     # ── final summary ────────────────────────────────────────────────────
-    elapsed = (datetime.utcnow() - start_time).total_seconds()
+    elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
     print(f"\n{'═' * 50}")
     print(f"✅  {source.display_name} — DONE")
     print(f"{'═' * 50}")
@@ -183,7 +183,7 @@ def run_source(
 def retry_failed(source: BaseSource) -> None:
     """Retry all previously failed downloads for a source."""
     state_mgr = StateManager(source.name)
-    client = HttpClient()
+    client = HttpClient(verify_ssl=source.verify_ssl)
     failures = state_mgr.get_failures()
 
     if not failures:

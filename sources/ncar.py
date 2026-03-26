@@ -51,6 +51,10 @@ class NcarSource(BaseSource):
     def delay_between_pages(self) -> float:
         return 0.5
 
+    @property
+    def verify_ssl(self) -> bool:
+        return False  # ncar.gov.sa has SSL certificate issues
+
     # ── internals ───────────────────────────────────────────────────────────
 
     API_BASE = "https://ncar.gov.sa/api/index.php/api"
@@ -68,7 +72,8 @@ class NcarSource(BaseSource):
     }
 
     def __init__(self):
-        self._client = HttpClient()
+        # ncar.gov.sa has SSL certificate issues — disable verification
+        self._client = HttpClient(verify_ssl=False)
 
     # ── fetch_page ──────────────────────────────────────────────────────────
 

@@ -4,10 +4,13 @@ Used by all source plugins and the generic PDF downloader.
 """
 
 import time
+import urllib3
 import requests
 from pathlib import Path
 from typing import Optional, Callable
 
+# Suppress SSL warnings when verify=False is used (some gov sites have cert issues)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DEFAULT_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -22,12 +25,15 @@ class HttpClient:
       - Automatic retries with backoff
       - Rate-limit (HTTP 429) handling
       - Streaming file downloads with optional validation
+      - Optional SSL verification bypass (for gov sites with cert issues)
     """
 
-    def __init__(self, timeout: int = 30, user_agent: str = DEFAULT_UA):
+    def __init__(self, timeout: int = 30, user_agent: str = DEFAULT_UA, verify_ssl: bool = True):
         self.timeout = timeout
+        self.verify_ssl = verify_ssl
         self.session = requests.Session()
         self.session.headers["User-Agent"] = user_agent
+        self.session.verify = verify_ssl
 
     # ── JSON GET ────────────────────────────────────────────────────────────
 

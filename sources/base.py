@@ -90,6 +90,11 @@ class BaseSource(ABC):
         """Seconds to wait between fetching pages (default 0.5)."""
         return 0.5
 
+    @property
+    def verify_ssl(self) -> bool:
+        """Whether to verify SSL certificates (default True). Override to False for sites with cert issues."""
+        return True
+
     # ── abstract methods every source must implement ────────────────────────
 
     @abstractmethod

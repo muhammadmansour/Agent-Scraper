@@ -13,7 +13,7 @@ Handles:
 import json
 import csv
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -67,8 +67,8 @@ class StateManager:
         state = {
             "last_page": 0,
             "processed_count": 0,
-            "started_at": datetime.utcnow().isoformat(),
-            "last_updated": datetime.utcnow().isoformat(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(timezone.utc).isoformat(),
             "total_docs": 0,
         }
         print(f"  [state] Fresh start for {self.source_name} — no previous state found")
@@ -90,10 +90,10 @@ class StateManager:
             **existing,
             "last_page": page,
             "processed_count": processed_count,
-            "last_updated": datetime.utcnow().isoformat(),
+            "last_updated": datetime.now(timezone.utc).isoformat(),
             "total_docs": total_docs or existing.get("total_docs", 0),
         }
-        state.setdefault("started_at", datetime.utcnow().isoformat())
+        state.setdefault("started_at", datetime.now(timezone.utc).isoformat())
 
         with open(self.state_file, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
@@ -128,7 +128,7 @@ class StateManager:
             "id": doc_id,
             "title": title,
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         with open(self.failed_file, "w", encoding="utf-8") as f:
             json.dump(failures, f, ensure_ascii=False, indent=2)
@@ -155,7 +155,7 @@ class StateManager:
             print(f"  ── Progress: {processed} docs | {pdf_count} PDFs | {fail_count} failures")
             return
 
-        elapsed = (datetime.utcnow() - start_time).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
         rate = processed / elapsed if elapsed > 0 else 0
         remaining = total - processed
         eta_secs = int(remaining / rate) if rate > 0 else 0
