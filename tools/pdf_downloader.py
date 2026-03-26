@@ -51,5 +51,7 @@ def download_pdfs_for_document(
                 print(f"      [{asset.label}] ✓ {size_kb} KB")
             except OSError:
                 print(f"      [{asset.label}] ✓")
+        else:
+            print(f"      [{asset.label}] — not available")
 
     return results

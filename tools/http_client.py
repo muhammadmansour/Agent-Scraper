@@ -146,22 +146,29 @@ class HttpClient:
                         time.sleep(5)
                     continue
 
+                # Check Content-Type before downloading — if the server returns
+                # HTML instead of a file, the resource doesn't exist (some sites
+                # return 200 + HTML error page instead of a proper 404).
+                content_type = resp.headers.get("Content-Type", "")
+                if "text/html" in content_type:
+                    resp.close()
+                    return False
+
                 # Stream to temp file
                 with open(tmp, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=8192):
                         f.write(chunk)
 
-                # Validate
+                # Validate file header (e.g. %PDF magic bytes)
                 if validator is not None:
                     try:
                         with open(tmp, "rb") as f:
                             header = f.read(64)
                         if not validator(header):
                             tmp.unlink(missing_ok=True)
-                            print(f"      [invalid file] attempt {attempt}/{retries}")
-                            if attempt < retries:
-                                time.sleep(3)
-                            continue
+                            # If it's not the expected file type, don't retry —
+                            # the server consistently returns the wrong content.
+                            return False
                     except Exception:
                         tmp.unlink(missing_ok=True)
                         continue
